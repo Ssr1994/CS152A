@@ -8,7 +8,7 @@ module twos_complement(
 	
 	always @ (*) begin
 		S = D[11];
-		D_t = S ? (~D + 1) : D;
+		D_t = S ? ((| D[10:0]) ? (~D + 1) : ~D) : D;
 	end
 	
 endmodule
@@ -24,14 +24,18 @@ module basic_FP_conversion(
 	reg [3:0] i;
 
 	always @ (*) begin
-		i = (((~& D[10:4]) & (| D[3:0])) << 3)
-			+ (((~& D[10:8]) & (| D[7:4])) << 2)
-			+ (((~D[10]) & ((| D[9:8]) | ((~& D[7:6]) & (| D[5:4])))) << 1)
-			+ (D[10] | ((~D[9]) & (D[8] | ((~D[7]) | (D[6] | (~D[5] & D[4]))))));
+		if (D[10]) i = 4'b0001;
+		else if (D[9]) i = 4'b0010;
+		else if (D[8]) i = 4'b0011;
+		else if (D[7]) i = 4'b0100;
+		else if (D[6]) i = 4'b0101;
+		else if (D[5]) i = 4'b0110;
+		else if (D[4]) i = 4'b0111;
+		else i = 4'b1000;
 	
 		E = 4'b1000 - i;
 		F = D >> (4'b1000 - i);
-		fifth_bit = D >> (i + 4'b0100);
+		fifth_bit = D >> (4'b0111 - i);
 	end
 	
 endmodule
@@ -44,13 +48,15 @@ module FP_rounding(
 	output reg [2:0] E_f,
 	output reg [3:0] F_f
 );
-
+	
+	reg E_full;
 	reg F_full;
 	
 	always @ (*) begin
+		E_full = (E == 3'b111);
 		F_full = (F == 4'b1111);
-		E_f = (fifth_bit && F_full) ? E + 1'b1 : E;
-		F_f = fifth_bit ? (F_full ? 4'b1000 : (F + 1'b1)) : F;
+		E_f = (fifth_bit && F_full && ~E_full) ? E + 1'b1 : E;
+		F_f = fifth_bit ? (F_full ? (E_full ? F : 4'b1000) : (F + 1'b1)) : F;
 	end
 
 endmodule
