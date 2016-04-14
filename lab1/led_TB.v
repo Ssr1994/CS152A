@@ -2,7 +2,7 @@
 
 module led_flash_TB;
 
-	wire [3:0] led;
+	wire led;
 	reg clk, rst;
 
 	// Instantiate the Unit Under Test (UUT)
