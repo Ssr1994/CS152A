@@ -3,7 +3,7 @@
 module led_flash(led, clk, rst);
 
 	input rst, clk;
-	output reg [3:0] led;
+	output reg led;
 	reg [26:0] a;
 	wire c;
 
@@ -20,7 +20,7 @@ module led_flash(led, clk, rst);
 		if (rst)
 			led <= 1'b0;
 		else
-			led <= led + 1'b1;
+			led <= ~led;
 	end
 		
 endmodule
