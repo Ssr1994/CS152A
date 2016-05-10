@@ -9,7 +9,7 @@ module display(
 	output [7:0] seg,
 	output [3:0] an);
 	
-	reg off;
+	reg off_min, off_sec;
 	reg [3:0] num;
 	reg [3:0] anode;
 	
