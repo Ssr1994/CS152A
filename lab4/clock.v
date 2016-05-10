@@ -51,7 +51,7 @@ module clock(
 		//count to 10^8/5
 		if (rst || counter_blink == 27'h1312D00)
 			counter_blink <= 1'b1;
-		else if (~pause)
+		else
 			counter_blink <= counter_blink + 1'b1;
 	end
 
