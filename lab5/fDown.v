@@ -38,6 +38,8 @@ reg [29:0] gapsWidth;
 reg [9:0] floorsSpeed;
 reg [9:0] ballVel; // velocity, ie., speed with direction
 
+`include "definitions.v"
+
 initial begin
 	xPos = 120;
 	yPos = 240;
@@ -55,15 +57,15 @@ drawBall ball(hc, vc, xPos, yPos, rBall, gBall, bBall);
 drawFloors floors(hc, vc, floorsYPos, gapsPos, gapsWidth, rFloors, gFloors, bFloors);
 
 always @ (posedge f) begin
-	if (dir == 2'b10 && xPos > 0
-		&& (yPos - ballRadius >= floorsYPos[29:20] + floorThick || floorsYPos[29:20] >= yPos + ballRadius || xPos >= floorsXPos[29:20] + ballRadius + ballSpeed)
-		&& (yPos - ballRadius >= floorsYPos[19:10] + floorThick || floorsYPos[19:10] >= yPos + ballRadius || xPos >= floorsXPos[19:10] + ballRadius + ballSpeed)
-		&& (yPos - ballRadius >= floorsYPos[9:0] + floorThick || floorsYPos[9:0] >= yPos + ballRadius || xPos >= floorsXPos[9:0] + ballRadius + ballSpeed))
+	if (dir == 2'b10 && xPos > ballSpeed
+		&& (yPos >= floorsYPos[29:20] + floorThick + ballRadius || floorsYPos[29:20] >= yPos + ballRadius || xPos >= gapsPos[29:20] + ballRadius + ballSpeed)
+		&& (yPos >= floorsYPos[19:10] + floorThick + ballRadius || floorsYPos[19:10] >= yPos + ballRadius || xPos >= gapsPos[19:10] + ballRadius + ballSpeed)
+		&& (yPos >= floorsYPos[9:0] + floorThick + ballRadius || floorsYPos[9:0] >= yPos + ballRadius || xPos >= gapsPos[9:0] + ballRadius + ballSpeed))
 		xPos <= xPos - ballSpeed;
 	else if (dir == 2'b01 && xPos < 640
-		&& (yPos - ballRadius >= floorsYPos[29:20] + floorThick || floorsYPos[29:20] >= yPos + ballRadius || xPos + ballSpeed >= floorsXPos[29:20] + ballRadius)
-		&& (yPos - ballRadius >= floorsYPos[19:10] + floorThick || floorsYPos[19:10] >= yPos + ballRadius || xPos + ballSpeed >= floorsXPos[19:10] + ballRadius)
-		&& (yPos - ballRadius >= floorsYPos[9:0] + floorThick || floorsYPos[9:0] >= yPos + ballRadius || xPos + ballSpeed >= floorsXPos[9:0] + ballRadius))
+		&& (yPos >= floorsYPos[29:20] + floorThick + ballRadius || floorsYPos[29:20] >= yPos + ballRadius || xPos + ballRadius + ballSpeed >= gapsPos[29:20] + gapsWidth[29:20])
+		&& (yPos >= floorsYPos[19:10] + floorThick + ballRadius || floorsYPos[19:10] >= yPos + ballRadius || xPos + ballRadius + ballSpeed >= gapsPos[19:10] + gapsWidth[19:10])
+		&& (yPos >= floorsYPos[9:0] + floorThick + ballRadius || floorsYPos[9:0] >= yPos + ballRadius || xPos + ballRadius + ballSpeed >= gapsPos[9:0] + gapsWidth[9:0]))
 		xPos <= xPos + ballSpeed;
 	else
 		xPos <= xPos;
