@@ -23,7 +23,9 @@ always @(posedge dclk or posedge clr) begin
 	if (clr == 1) begin
 		hc <= 0;
 		vc <= 0;
+		f <= 0;
 	end else begin
+		f <= 0;
 		// keep counting until the end of the line
 		if (hc < hpixels - 1)
 			hc <= hc + 1;
@@ -33,7 +35,7 @@ always @(posedge dclk or posedge clr) begin
 				vc <= vc + 1;
 			else begin
 				vc <= 0;
-				f <= ~f;
+				f <= 1;
 			end
 		end
 	end

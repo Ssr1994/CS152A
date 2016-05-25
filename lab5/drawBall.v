@@ -14,8 +14,8 @@ module drawBall(
 wire active;
 
 assign active = (ballRadius * ballRadius >= (hc - xPos) * (hc - xPos) + (vc - yPos) * (vc - yPos));
-assign r = active ? 3'b100 : 3'b000;
-assign g = active ? 3'b100 : 3'b000;
+assign r = active ? 3'b111 : 3'b000;
+assign g = active ? 3'b111 : 3'b000;
 assign b = active ? 3'b11 : 3'b00;
 
 endmodule

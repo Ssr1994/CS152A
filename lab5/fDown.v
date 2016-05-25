@@ -2,6 +2,8 @@
 
 module fDown(
 	input clk,
+	input btnL,
+	input btnR,
 	output [2:0] red,
 	output [2:0] green,
 	output [1:0] blue,
@@ -14,6 +16,8 @@ wire segclk;
 wire [9:0] hc;
 wire [9:0] vc;
 wire f; // one frame
+
+wire [1:0] dir;
 
 // Colors
 wire [2:0] rBall;
@@ -33,7 +37,7 @@ reg [29:0] gapsPos;
 reg [29:0] gapsWidth;
 
 initial begin
-	xPos = 320;
+	xPos = 120;
 	yPos = 240;
 	floorsYPos = {10'h064, 10'h0FA, 10'h190}; // 100, 250, 400
 	gapsPos = {10'h0C8, 10'h12C, 10'h096}; // 200, 300, 150
@@ -42,6 +46,14 @@ end
 
 clockdiv freqs(clk, 0, dclk, segclk);
 vga VGA(dclk, 0, hsync, vsync, hc, vc, f);
+
+moveDir movedir(clk, f, btnL, btnR, dir);
+always @ (posedge f)
+	if (dir == 2'b10 && xPos > 0)
+		xPos <= xPos - 2;
+	else if (dir == 2'b01 && xPos < 640)
+		xPos <= xPos + 2;
+
 drawBall ball(hc, vc, xPos, yPos, rBall, gBall, bBall);
 drawFloors floors(hc, vc, floorsYPos, gapsPos, gapsWidth, rFloors, gFloors, bFloors);
 
