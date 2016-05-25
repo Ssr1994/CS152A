@@ -14,6 +14,6 @@ initial dir_temp = 2'b00;
 
 always @ (posedge clk) dir_temp <= {btnL, btnR};
 
-always @ (posedge f) dir = dir_temp;
+always @ (posedge f) dir <= dir_temp;
 
 endmodule

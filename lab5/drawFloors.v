@@ -3,7 +3,7 @@
 module drawFloors(
 	input [9:0] hc,
 	input [9:0] vc,
-	input [29:0] yPos, // floors' vertical position (lower)
+	input [29:0] yPos, // floors' vertical position (upper)
 	input [29:0] gapsPos, // gaps' horizontal position (left)
 	input [29:0] gapsWidth,
 	output [2:0] r,
