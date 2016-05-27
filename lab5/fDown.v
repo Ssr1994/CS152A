@@ -10,7 +10,9 @@ module fDown(
 	output [2:0] green,
 	output [1:0] blue,
 	output hsync,
-	output vsync
+	output vsync,
+	output [7:0] seg,
+	output [3:0] an
 	);
 	
 wire dclk;
@@ -40,8 +42,8 @@ reg [29:0] gapsWidth;
 reg [9:0] floorsSpeed;
 wire [9:0] randWidth;
 wire [9:0] randPos;
-reg [9:0] rand6; // 63 max
-reg [9:0] rand8; // 1023 max
+reg [5:0] rand6; // 63 max
+reg [7:0] rand8; // 1023 max
 
 reg step_d;
 reg pause;
@@ -52,6 +54,7 @@ reg [19:0] highest;
 `include "definitions.v"
 
 clockdiv freqs(clk, rst, dclk, segclk);
+scores displayscore(segclk, rst, 1'b1, score, highest, seg, an);
 vga VGA(dclk, rst, hsync, vsync, hc, vc, f);
 moveDir movedir(clk, rst, f, btnL, btnR, dir);
 drawBall ball(hc, vc, xPos, yPos, rBall, gBall, bBall);
@@ -75,8 +78,8 @@ always @ (posedge f or posedge rst) begin
 		if (floorsYPos[29:20] > floorsSpeed)
 			floorsYPos <= floorsYPos - {3{floorsSpeed}};
 		else begin
-			rand6 <= {rand6[9:6], rand6[4:0], rand6[5] ^ rand6[4]};
-			rand8 <= {rand8[9:8], rand8[6:0], rand8[7] ^ rand8[5] ^ rand8[4] ^ rand8[3]};
+			rand6 <= {rand6[5:0], rand6[5] ^ rand6[4]};
+			rand8 <= {rand8[7:0], rand8[7] ^ rand8[5] ^ rand8[4] ^ rand8[3]};
 			floorsYPos <= {floorsYPos[19:10], floorsYPos[9:0], floorsYPos[9:0] + 10'h0C8} - {3{floorsSpeed}};
 			gapsPos <= {gapsPos[19:10], gapsPos[9:0], gapsPos[29:20]};
 			gapsWidth <= {gapsWidth[19:10], gapsWidth[9:0], randWidth};
@@ -115,8 +118,8 @@ always @ (posedge segclk) begin
 		pause <= ~pause;
 end
 
-assign randWidth = rand6 + gapWidthMin;
-assign randPos = rand6 + rand8;
+assign randWidth = {4'h0, rand6[5:0]} + gapWidthMin;
+assign randPos = {4'h0, rand6[5:0]} + {2'b00, rand8[7:0]};
 
 assign red = rBall + rFloors;
 assign green = gBall + gFloors;
