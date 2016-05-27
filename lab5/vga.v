@@ -2,7 +2,7 @@
 
 module vga(
 	input dclk,
-	input clr,
+	input rst,
 	output hsync,
 	output vsync,
 	output reg [9:0] hc, // horizontal pixel counter
@@ -12,15 +12,9 @@ module vga(
 
 `include "definitions.v"
 
-initial begin
-	hc = 0;
-	vc = 0;
-	f = 0;
-end
-
-always @(posedge dclk or posedge clr) begin
+always @(posedge dclk or posedge rst) begin
 	// reset condition
-	if (clr == 1) begin
+	if (rst == 1) begin
 		hc <= 0;
 		vc <= 0;
 		f <= 0;

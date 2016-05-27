@@ -2,6 +2,7 @@
 
 module moveDir(
 	input clk,
+	input rst,
 	input f,
 	input btnL,
 	input btnR,
@@ -10,9 +11,11 @@ module moveDir(
 
 reg [1:0] dir_temp;
 
-initial dir_temp = 2'b00;
-
-always @ (posedge clk) dir_temp <= {btnL, btnR};
+always @ (posedge clk or posedge rst)
+	if (rst == 1)
+		dir_temp <= 2'b00;
+	else
+		dir_temp <= {btnL, btnR};
 
 always @ (posedge f) dir <= dir_temp;
 

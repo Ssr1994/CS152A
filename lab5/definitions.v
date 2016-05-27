@@ -12,7 +12,6 @@ parameter vlines = 524;
 
 parameter ballRadius = 12;
 parameter floorThick = 15;
-parameter gapWidthMin = 40;
-parameter gapWidthMax = 120;
+parameter gapWidthMin = 80;
 
 parameter ballSpeed = 10'h004;

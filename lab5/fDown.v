@@ -2,6 +2,8 @@
 
 module fDown(
 	input clk,
+	input rst,
+	input btnS,
 	input btnL,
 	input btnR,
 	output [2:0] red,
@@ -36,59 +38,79 @@ reg [29:0] gapsPos; // left
 reg [29:0] gapsWidth;
 
 reg [9:0] floorsSpeed;
-reg [9:0] ballVel; // velocity, ie., speed with direction
+wire [9:0] randWidth;
+wire [9:0] randPos;
+reg [9:0] rand6; // 63 max
+reg [9:0] rand8; // 1023 max
+
+reg step_d;
+reg pause;
 
 `include "definitions.v"
 
-initial begin
-	xPos = 120;
-	yPos = 240;
-	floorsYPos = {10'h12C, 10'h1F4, 10'h2BC}; // 300, 500, 700
-	gapsPos = {10'h0C8, 10'h12C, 10'h096}; // 200, 300, 150
-	gapsWidth = {10'h050, 10'h064, 10'h078}; // 80, 100, 120
-	floorsSpeed = 10'h002;
-	ballVel = 10'h000;
-end
-
-clockdiv freqs(clk, 0, dclk, segclk);
-vga VGA(dclk, 0, hsync, vsync, hc, vc, f);
-moveDir movedir(clk, f, btnL, btnR, dir);
+clockdiv freqs(clk, rst, dclk, segclk);
+vga VGA(dclk, rst, hsync, vsync, hc, vc, f);
+moveDir movedir(clk, rst, f, btnL, btnR, dir);
 drawBall ball(hc, vc, xPos, yPos, rBall, gBall, bBall);
 drawFloors floors(hc, vc, floorsYPos, gapsPos, gapsWidth, rFloors, gFloors, bFloors);
 
 always @ (posedge f) begin
-	if (floorsYPos[29:20] > floorsSpeed)
-		floorsYPos <= floorsYPos - {3{floorsSpeed}};
-	else begin
-		floorsYPos <= {floorsYPos[19:10], floorsYPos[9:0], floorsYPos[9:0] + 10'h0C8} - {3{floorsSpeed}};
-		gapsPos <= {gapsPos[19:10], gapsPos[9:0], gapsPos[29:20]};
-		gapsWidth <= {gapsWidth[19:10], gapsWidth[9:0], gapsWidth[29:20]};
+	rand6 <= {rand6[9:6], rand6[4:0], rand6[5] ^ rand6[4]};
+	rand8 <= {rand8[9:8], rand8[6:0], rand8[7] ^ rand8[5] ^ rand8[4] ^ rand8[3]};
+end
+
+assign randWidth = rand6 + gapWidthMin;
+assign randPos = rand6 + rand8;
+
+always @ (posedge f or posedge rst) begin
+	if (rst == 1) begin
+		xPos <= 120;
+		yPos <= 240;
+		floorsYPos <= {10'h12C, 10'h1F4, 10'h2BC}; // 300, 500, 700
+		gapsPos <= {10'h0C8, 10'h12C, 10'h096}; // 200, 300, 150
+		gapsWidth <= {10'h050, 10'h064, 10'h078}; // 80, 100, 120
+		floorsSpeed <= 10'h002;
 	end
+	else if (~pause) begin
+		if (floorsYPos[29:20] > floorsSpeed)
+			floorsYPos <= floorsYPos - {3{floorsSpeed}};
+		else begin
+			floorsYPos <= {floorsYPos[19:10], floorsYPos[9:0], floorsYPos[9:0] + 10'h0C8} - {3{floorsSpeed}};
+			gapsPos <= {gapsPos[19:10], gapsPos[9:0], gapsPos[29:20]};
+			gapsWidth <= {gapsWidth[19:10], gapsWidth[9:0], randWidth};
+		end
 
-	if (dir == 2'b10 && xPos > ballSpeed
-		&& (yPos >= floorsYPos[29:20] + floorThick + ballRadius || floorsYPos[29:20] >= yPos + ballRadius || xPos >= gapsPos[29:20] + ballRadius + ballSpeed)
-		&& (yPos >= floorsYPos[19:10] + floorThick + ballRadius || floorsYPos[19:10] >= yPos + ballRadius || xPos >= gapsPos[19:10] + ballRadius + ballSpeed)
-		&& (yPos >= floorsYPos[9:0] + floorThick + ballRadius || floorsYPos[9:0] >= yPos + ballRadius || xPos >= gapsPos[9:0] + ballRadius + ballSpeed))
-		xPos <= xPos - ballSpeed;
-	else if (dir == 2'b01 && xPos < ha
-		&& (yPos >= floorsYPos[29:20] + floorThick + ballRadius || floorsYPos[29:20] >= yPos + ballRadius || gapsPos[29:20] + gapsWidth[29:20] >= xPos + ballRadius + ballSpeed)
-		&& (yPos >= floorsYPos[19:10] + floorThick + ballRadius || floorsYPos[19:10] >= yPos + ballRadius || gapsPos[19:10] + gapsWidth[19:10] >= xPos + ballRadius + ballSpeed)
-		&& (yPos >= floorsYPos[9:0] + floorThick + ballRadius || floorsYPos[9:0] >= yPos + ballRadius || gapsPos[9:0] + gapsWidth[9:0] >= xPos + ballRadius + ballSpeed))
-		xPos <= xPos + ballSpeed;
+		if (dir == 2'b10 && xPos > ballSpeed
+			&& (yPos >= floorsYPos[29:20] + floorThick + ballRadius || floorsYPos[29:20] >= yPos + ballRadius || xPos >= gapsPos[29:20] + ballRadius + ballSpeed)
+			&& (yPos >= floorsYPos[19:10] + floorThick + ballRadius || floorsYPos[19:10] >= yPos + ballRadius || xPos >= gapsPos[19:10] + ballRadius + ballSpeed)
+			&& (yPos >= floorsYPos[9:0] + floorThick + ballRadius || floorsYPos[9:0] >= yPos + ballRadius || xPos >= gapsPos[9:0] + ballRadius + ballSpeed))
+			xPos <= xPos - ballSpeed;
+		else if (dir == 2'b01 && xPos < ha
+			&& (yPos >= floorsYPos[29:20] + floorThick + ballRadius || floorsYPos[29:20] >= yPos + ballRadius || gapsPos[29:20] + gapsWidth[29:20] >= xPos + ballRadius + ballSpeed)
+			&& (yPos >= floorsYPos[19:10] + floorThick + ballRadius || floorsYPos[19:10] >= yPos + ballRadius || gapsPos[19:10] + gapsWidth[19:10] >= xPos + ballRadius + ballSpeed)
+			&& (yPos >= floorsYPos[9:0] + floorThick + ballRadius || floorsYPos[9:0] >= yPos + ballRadius || gapsPos[9:0] + gapsWidth[9:0] >= xPos + ballRadius + ballSpeed))
+			xPos <= xPos + ballSpeed;
 
-	if (yPos < floorsSpeed)
-		// game over
-		yPos <= 0;
-	else if (yPos + ballRadius >= ha)
-		yPos <= ha - ballRadius;
-	else if (floorsYPos[29:20] >= yPos && ballRadius > floorsYPos[29:20] - yPos && (xPos < gapsPos[29:20] + ballRadius || xPos + ballRadius > gapsPos[29:20] + gapsWidth[29:20]))
-		yPos <= floorsYPos[29:20] - floorsSpeed - ballRadius;
-	else if (floorsYPos[19:10] >= yPos && ballRadius > floorsYPos[19:10] - yPos && (xPos < gapsPos[19:10] + ballRadius || xPos + ballRadius > gapsPos[19:10] + gapsWidth[19:10]))
-		yPos <= floorsYPos[19:10] - floorsSpeed - ballRadius;
-	else if (floorsYPos[9:0] >= yPos && ballRadius > floorsYPos[9:0] - yPos && (xPos < gapsPos[9:0] + ballRadius || xPos + ballRadius > gapsPos[9:0] + gapsWidth[9:0]))
-		yPos <= floorsYPos[9:0] - floorsSpeed - ballRadius;
-	else
-		yPos <= yPos + ballSpeed;
+		if (yPos < floorsSpeed)
+			// game over
+			yPos <= 0;
+		else if (floorsYPos[29:20] >= yPos && ballRadius + floorsSpeed > floorsYPos[29:20] - yPos && (xPos < gapsPos[29:20] + ballRadius || xPos + ballRadius > gapsPos[29:20] + gapsWidth[29:20]))
+			yPos <= floorsYPos[29:20] - floorsSpeed - ballRadius;
+		else if (floorsYPos[19:10] >= yPos && ballRadius + floorsSpeed > floorsYPos[19:10] - yPos && (xPos < gapsPos[19:10] + ballRadius || xPos + ballRadius > gapsPos[19:10] + gapsWidth[19:10]))
+			yPos <= floorsYPos[19:10] - floorsSpeed - ballRadius;
+		else if (floorsYPos[9:0] >= yPos && ballRadius + floorsSpeed > floorsYPos[9:0] - yPos && (xPos < gapsPos[9:0] + ballRadius || xPos + ballRadius > gapsPos[9:0] + gapsWidth[9:0]))
+			yPos <= floorsYPos[9:0] - floorsSpeed - ballRadius;
+		else if (yPos + ballRadius >= va)
+			yPos <= va - ballRadius;
+		else
+			yPos <= yPos + ballSpeed;
+	end
+end
+
+always @ (posedge segclk) begin
+	step_d <= btnS;
+	if (btnS & ~step_d)
+		pause <= ~pause;
 end
 
 assign red = rBall + rFloors;
