@@ -68,8 +68,8 @@ always @ (posedge f or posedge rst) begin
 		gapsPos <= {10'h0C8, 10'h12C, 10'h096}; // 200, 300, 150
 		gapsWidth <= {10'h050, 10'h064, 10'h078}; // 80, 100, 120
 		floorsSpeed <= 10'h002;
-		rand6 <= {4'h0, score[5:0]};
-		rand8 <= {2'b00, score[7:0]};
+		rand6 <= score[5:0];
+		rand8 <= score[7:0];
 		score <= 0;
 	end
 	else if (~pause) begin
