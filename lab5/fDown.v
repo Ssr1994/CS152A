@@ -46,6 +46,9 @@ reg [9:0] rand8; // 1023 max
 reg step_d;
 reg pause;
 
+reg [19:0] score;
+reg [19:0] highest;
+
 `include "definitions.v"
 
 clockdiv freqs(clk, rst, dclk, segclk);
@@ -53,14 +56,6 @@ vga VGA(dclk, rst, hsync, vsync, hc, vc, f);
 moveDir movedir(clk, rst, f, btnL, btnR, dir);
 drawBall ball(hc, vc, xPos, yPos, rBall, gBall, bBall);
 drawFloors floors(hc, vc, floorsYPos, gapsPos, gapsWidth, rFloors, gFloors, bFloors);
-
-always @ (posedge f) begin
-	rand6 <= {rand6[9:6], rand6[4:0], rand6[5] ^ rand6[4]};
-	rand8 <= {rand8[9:8], rand8[6:0], rand8[7] ^ rand8[5] ^ rand8[4] ^ rand8[3]};
-end
-
-assign randWidth = rand6 + gapWidthMin;
-assign randPos = rand6 + rand8;
 
 always @ (posedge f or posedge rst) begin
 	if (rst == 1) begin
@@ -70,11 +65,18 @@ always @ (posedge f or posedge rst) begin
 		gapsPos <= {10'h0C8, 10'h12C, 10'h096}; // 200, 300, 150
 		gapsWidth <= {10'h050, 10'h064, 10'h078}; // 80, 100, 120
 		floorsSpeed <= 10'h002;
+		rand6 <= {4'h0, score[5:0]};
+		rand8 <= {2'b00, score[7:0]};
+		score <= 0;
 	end
 	else if (~pause) begin
+		score <= score + 1;
+	
 		if (floorsYPos[29:20] > floorsSpeed)
 			floorsYPos <= floorsYPos - {3{floorsSpeed}};
 		else begin
+			rand6 <= {rand6[9:6], rand6[4:0], rand6[5] ^ rand6[4]};
+			rand8 <= {rand8[9:8], rand8[6:0], rand8[7] ^ rand8[5] ^ rand8[4] ^ rand8[3]};
 			floorsYPos <= {floorsYPos[19:10], floorsYPos[9:0], floorsYPos[9:0] + 10'h0C8} - {3{floorsSpeed}};
 			gapsPos <= {gapsPos[19:10], gapsPos[9:0], gapsPos[29:20]};
 			gapsWidth <= {gapsWidth[19:10], gapsWidth[9:0], randWidth};
@@ -112,6 +114,9 @@ always @ (posedge segclk) begin
 	if (btnS & ~step_d)
 		pause <= ~pause;
 end
+
+assign randWidth = rand6 + gapWidthMin;
+assign randPos = rand6 + rand8;
 
 assign red = rBall + rFloors;
 assign green = gBall + gFloors;
