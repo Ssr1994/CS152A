@@ -3,7 +3,7 @@
 module scores(
 	input segclk,
 	input rst,
-	input sw,
+	input hi,
 	input [19:0] score,
 	input [19:0] highest,
 	output [7:0] seg,
@@ -13,7 +13,10 @@ module scores(
 reg [3:0] num;
 reg [3:0] anode;
 reg [7:0] segNum;
-reg [19:0] my_score;
+integer my_score;
+
+always @(score)
+	my_score = hi ? highest[19:6] : score[19:6];
 
 always @ (num)
 	case(num) //0 means on 1 means off
@@ -35,13 +38,15 @@ always @(posedge segclk or posedge rst)
 		anode <= 4'b1110;
 	else begin
 		anode <= {anode[0], anode[3:1]};
-		case(anode)
-			4'b0111: num <= my_score[19:6] % 10000;
-			4'b1011: num <= my_score[19:6] % 1000;
-			4'b1101: num <= my_score[19:6] % 100;
-			4'b1110: num <= my_score[19:6] % 10;
-		endcase
 	end
+
+always @(anode)
+	case(anode)
+		4'b0111: num = my_score / 1000 % 10000;
+		4'b1011: num = my_score / 100 % 1000;
+		4'b1101: num = my_score / 10 % 100;
+		4'b1110: num = my_score % 10;
+	endcase
 
 assign seg = segNum;
 assign an = anode;

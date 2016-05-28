@@ -6,6 +6,7 @@ module fDown(
 	input btnS,
 	input btnL,
 	input btnR,
+	input hi, // see high score
 	output [2:0] red,
 	output [2:0] green,
 	output [1:0] blue,
@@ -42,38 +43,38 @@ reg [29:0] gapsWidth;
 reg [9:0] floorsSpeed;
 wire [9:0] randWidth;
 wire [9:0] randPos;
-reg [5:0] rand6; // 63 max
-reg [7:0] rand8; // 1023 max
+reg [5:0] rand6 = 1; // 63 max
+reg [7:0] rand8 = 2; // 511 max
 
 reg step_d;
 reg pause;
 
 reg [19:0] score;
-reg [19:0] highest;
+reg [19:0] highest = 0;
 
 `include "definitions.v"
 
 clockdiv freqs(clk, rst, dclk, segclk);
-scores displayscore(segclk, rst, 1'b1, score, highest, seg, an);
+scores displayscore(segclk, rst, hi, score, highest, seg, an);
 vga VGA(dclk, rst, hsync, vsync, hc, vc, f);
 moveDir movedir(clk, rst, f, btnL, btnR, dir);
 drawBall ball(hc, vc, xPos, yPos, rBall, gBall, bBall);
 drawFloors floors(hc, vc, floorsYPos, gapsPos, gapsWidth, rFloors, gFloors, bFloors);
 
 always @ (posedge f or posedge rst) begin
-	if (rst == 1) begin
-		xPos <= 120;
-		yPos <= 240;
+	if (rst) begin
+		xPos <= 320;
+		yPos <= 20;
 		floorsYPos <= {10'h12C, 10'h1F4, 10'h2BC}; // 300, 500, 700
 		gapsPos <= {10'h0C8, 10'h12C, 10'h096}; // 200, 300, 150
 		gapsWidth <= {10'h050, 10'h064, 10'h078}; // 80, 100, 120
-		floorsSpeed <= 10'h002;
-		rand6 <= score[5:0];
-		rand8 <= score[7:0];
+		//rand6 <= score[5:0];
+		//rand8 <= score[7:0];
 		score <= 0;
 	end
 	else if (~pause) begin
-		score <= score + 1;
+		if (yPos)
+			score <= score + 1;
 	
 		if (floorsYPos[29:20] > floorsSpeed)
 			floorsYPos <= floorsYPos - {3{floorsSpeed}};
@@ -81,7 +82,7 @@ always @ (posedge f or posedge rst) begin
 			rand6 <= {rand6[5:0], rand6[5] ^ rand6[4]};
 			rand8 <= {rand8[7:0], rand8[7] ^ rand8[5] ^ rand8[4] ^ rand8[3]};
 			floorsYPos <= {floorsYPos[19:10], floorsYPos[9:0], floorsYPos[9:0] + 10'h0C8} - {3{floorsSpeed}};
-			gapsPos <= {gapsPos[19:10], gapsPos[9:0], gapsPos[29:20]};
+			gapsPos <= {gapsPos[19:10], gapsPos[9:0], randPos};
 			gapsWidth <= {gapsWidth[19:10], gapsWidth[9:0], randWidth};
 		end
 
@@ -96,9 +97,12 @@ always @ (posedge f or posedge rst) begin
 			&& (yPos >= floorsYPos[9:0] + floorThick + ballRadius || floorsYPos[9:0] >= yPos + ballRadius || gapsPos[9:0] + gapsWidth[9:0] >= xPos + ballRadius + ballSpeed))
 			xPos <= xPos + ballSpeed;
 
-		if (yPos < floorsSpeed)
+		if (yPos < floorsSpeed) begin
 			// game over
 			yPos <= 0;
+			if (highest < score)
+				highest <= score;
+		end
 		else if (floorsYPos[29:20] >= yPos && ballRadius + floorsSpeed > floorsYPos[29:20] - yPos && (xPos < gapsPos[29:20] + ballRadius || xPos + ballRadius > gapsPos[29:20] + gapsWidth[29:20]))
 			yPos <= floorsYPos[29:20] - floorsSpeed - ballRadius;
 		else if (floorsYPos[19:10] >= yPos && ballRadius + floorsSpeed > floorsYPos[19:10] - yPos && (xPos < gapsPos[19:10] + ballRadius || xPos + ballRadius > gapsPos[19:10] + gapsWidth[19:10]))
@@ -112,11 +116,23 @@ always @ (posedge f or posedge rst) begin
 	end
 end
 
-always @ (posedge segclk) begin
-	step_d <= btnS;
-	if (btnS & ~step_d)
-		pause <= ~pause;
+always @ (posedge segclk or posedge rst) begin
+	if (rst)
+		pause <= 0;
+	else begin
+		step_d <= btnS;
+		if (btnS & ~step_d)
+			pause <= ~pause;
+	end
 end
+
+always @ (posedge levelUp or posedge rst)
+	if (rst)
+		floorsSpeed <= 10'h002;
+	else
+		floorsSpeed <= floorsSpeed + 10'h001;
+
+assign levelUp = score[8];
 
 assign randWidth = {4'h0, rand6[5:0]} + gapWidthMin;
 assign randPos = {4'h0, rand6[5:0]} + {2'b00, rand8[7:0]};
