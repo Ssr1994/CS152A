@@ -16,7 +16,7 @@ reg [7:0] segNum;
 integer my_score;
 
 always @(score)
-	my_score = hi ? highest[19:6] : score[19:6];
+	my_score = hi ? highest[19:2] : score[19:2];
 
 always @ (num)
 	case(num) //0 means on 1 means off
@@ -42,9 +42,9 @@ always @(posedge segclk or posedge rst)
 
 always @(anode)
 	case(anode)
-		4'b0111: num = my_score / 1000 % 10000;
-		4'b1011: num = my_score / 100 % 1000;
-		4'b1101: num = my_score / 10 % 100;
+		4'b0111: num = my_score % 10000 / 1000;
+		4'b1011: num = my_score % 1000 / 100;
+		4'b1101: num = my_score % 100 / 10;
 		4'b1110: num = my_score % 10;
 	endcase
 

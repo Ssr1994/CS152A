@@ -118,7 +118,9 @@ end
 
 always @ (posedge segclk or posedge rst) begin
 	if (rst)
-		pause <= 0;
+		pause <= 1'b0;
+	else if (yPos == 0)
+		pause <= 1'b1;
 	else begin
 		step_d <= btnS;
 		if (btnS & ~step_d)
@@ -137,8 +139,8 @@ assign levelUp = score[8];
 assign randWidth = {4'h0, rand6[5:0]} + gapWidthMin;
 assign randPos = {4'h0, rand6[5:0]} + {2'b00, rand8[7:0]};
 
-assign red = rBall + rFloors;
-assign green = gBall + gFloors;
-assign blue = bBall + bFloors;
+assign red = rBall == 3'b000 ? rFloors : rBall;
+assign green = gBall == 3'b000 ? gFloors : gBall;
+assign blue = bBall == 3'b000 ? bFloors : bBall;
 
 endmodule
